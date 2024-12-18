@@ -37,6 +37,7 @@ import numpy as np
 from PIL import Image
 import face_recognition_models
 import face_recognition
+import webbrowser
 
 if platform == "win32":
     os.environ["PYSDL2_DLL_PATH"] = "."
@@ -63,10 +64,10 @@ global serial_connection
 
 # Preload known celebrity encodings and names
 KNOWN_IMAGES = [
-    ("Mark Zuckerberg", "known_celebrities/mark.jpg"),
-    ("Elon Musk", "known_celebrities/elon.jpg"),
-    ("Linus Torvalds", "known_celebrities/linus.jpg"),
-    ("Bill Gates", "known_celebrities/bill.jpg")
+    ("https://en.wikipedia.org/wiki/Mark_Zuckerberg", "known_celebrities/mark.jpg"),
+    ("https://en.wikipedia.org/wiki/Elon_Musk", "known_celebrities/elon.jpg"),
+    ("https://en.wikipedia.org/wiki/Linus_Torvalds", "known_celebrities/linus.jpg"),
+    ("https://en.wikipedia.org/wiki/Bill_Gates", "known_celebrities/bill.jpg")
 ]
 
 known_encodings = []
@@ -182,6 +183,7 @@ def save_frame_as_image(pixels, frame_number):
         distances = face_recognition.face_distance(known_encodings, target_encoding[0])
         best_match_index = distances.argmin()
         print(f"Recognized: {known_names[best_match_index]} with distance {distances[best_match_index]}")
+        webbrowser.open(known_names[best_match_index])
     else:
         print("No face detected in the frame.")
 
