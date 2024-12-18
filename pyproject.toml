@@ -4,6 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Bartosz Sójka <bartsoj@gmail.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -11,6 +12,9 @@ pyserial = "^3.5"
 numpy = "^2.1.3"
 pysdl2 = "^0.9.16"
 pillow = "^11.0.0"
+face-recognition = "^1.3.0"
+face-recognition-models = {git = "https://github.com/ageitgey/face_recognition_models"}
+setuptools = "^75.6.0"
 
 
 [build-system]
