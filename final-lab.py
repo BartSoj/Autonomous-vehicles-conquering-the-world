@@ -34,6 +34,8 @@ import ctypes
 from sys import platform
 import serial
 import numpy as np
+from PIL import Image
+import time
 
 if platform == "win32":
     os.environ["PYSDL2_DLL_PATH"] = "."
@@ -133,6 +135,28 @@ def cleanupSDL(frame, window):
     SDL_Quit()
 
 
+def save_frame_as_image(pixels, frame_number):
+    """Save the current frame as an image file."""
+    # Convert the pixels array to a numpy array of shape (HEIGHT, WIDTH, 3) for RGB
+    array = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
+
+    for x in range(WIDTH):
+        for y in range(HEIGHT):
+            pixel_data = pixels[x][y]
+            r = (pixel_data >> 16) & 0xFF
+            g = (pixel_data >> 8) & 0xFF
+            b = pixel_data & 0xFF
+            array[y, x] = [r, g, b]  # NOTICE: Y (row), X (column)
+
+    # Save the array as an image using Pillow
+    img = Image.fromarray(array)
+    output_dir = "captured_images"
+    os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
+    filename = f"{output_dir}/frame_{frame_number}.png"
+    img.save(filename)
+    print(f"Saved frame {frame_number} to {filename}")
+
+
 def stage1():  # receive text
     while True:
         try:
@@ -153,6 +177,7 @@ def stage2():  # receive images
     # wait until the sync key is received via the serial port
     sync(serial_connection, first=True)
 
+    frame_number = 0
     continue_running = True
     while continue_running:
         # for every frame column
@@ -178,12 +203,14 @@ def stage2():  # receive images
         if not continue_running:
             break
 
+        save_frame_as_image(pixels, frame_number)
+        frame_number += 1
+
         # wait until the sync key is received for the next frame via the serial port
         sync(serial_connection, first=False)
 
     # close the window
     cleanupSDL(frame, window)
-
     return 0
 
 
