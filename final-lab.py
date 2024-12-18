@@ -29,12 +29,12 @@ Do not forget to configure the serial port device below.
 
 """
 
-import sys
 import os
 import ctypes
 from sys import platform
 import serial
 import numpy as np
+
 if platform == "win32":
     os.environ["PYSDL2_DLL_PATH"] = "."
 from sdl2 import *
@@ -56,6 +56,9 @@ SERIAL_BAUD_RATE = 115200
 WIDTH = 240
 HEIGHT = 320
 
+global serial_connection
+
+
 def yuv2rgb(y, u, v):
     """Convert YUV color space values to to RGB values.
     In the yuv422 color space, 2 pixels are encoded in 4 bytes as follows:
@@ -66,10 +69,11 @@ def yuv2rgb(y, u, v):
     """
 
     return (
-        np.clip((298 * (y-16) + 409 * (v-128) + 128 ) >> 8, 0, 255),
-        np.clip((298 * (y-16) - 100 * (u-128) - 208 * (v-128) + 128 ) >> 8, 0, 255),
-        np.clip((298 * (y-16) + 516 * (u-128) + 128 ) >> 8, 0, 255)
+        np.clip((298 * (y - 16) + 409 * (v - 128) + 128) >> 8, 0, 255),
+        np.clip((298 * (y - 16) - 100 * (u - 128) - 208 * (v - 128) + 128) >> 8, 0, 255),
+        np.clip((298 * (y - 16) + 516 * (u - 128) + 128) >> 8, 0, 255)
     )
+
 
 def sync(serial_conn, first=True):
     """ Wait for frame synchronization input """
@@ -91,20 +95,22 @@ def sync(serial_conn, first=True):
         if dropped_bytes > 0:
             print(f"Warning: dropped bytes: {dropped_bytes}")
 
+
 def setupSDL():
     """ Create the SDL window """
     SDL_Init(SDL_INIT_EVERYTHING)
     window = SDL_CreateWindow(b"Frame Viewer",
-                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                    WIDTH, HEIGHT, SDL_WINDOW_SHOWN)
+                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                              WIDTH, HEIGHT, SDL_WINDOW_SHOWN)
     window_surface = SDL_GetWindowSurface(window)
     frame = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 32, 0x0000ff, 0x00ff00, 0xff0000, 0)
-    pixels = sdl2.ext.pixels2d(frame.contents) # used to access pixels from passed source directly
-    SDL_BlitSurface(frame, None, window_surface, None) # copy the frame to the window surface
-    SDL_UpdateWindowSurface(window) # copy the window surface to the screen
+    pixels = sdl2.ext.pixels2d(frame.contents)  # used to access pixels from passed source directly
+    SDL_BlitSurface(frame, None, window_surface, None)  # copy the frame to the window surface
+    SDL_UpdateWindowSurface(window)  # copy the window surface to the screen
     event = SDL_Event()
 
     return [pixels, frame, window_surface, window, event]
+
 
 def updateSDLWindow(frame, window_surface, window, event):
     """ Update the window with new image data """
@@ -119,11 +125,13 @@ def updateSDLWindow(frame, window_surface, window, event):
             return False
     return True
 
+
 def cleanupSDL(frame, window):
     """ Close the window """
     SDL_FreeSurface(frame)
     SDL_DestroyWindow(window)
     SDL_Quit()
+
 
 def stage1():  # receive text
     while True:
@@ -134,6 +142,7 @@ def stage1():  # receive text
         if serial_input == "Q":
             break
         print(serial_input, end='')
+
 
 def stage2():  # receive images
     # Setup the SDL window
@@ -149,18 +158,17 @@ def stage2():  # receive images
         # for every frame column
         for x in range(0, WIDTH, 1):
             # for every frame row y from HEIGHT-1 down to 0 with 2 pixels per step
-            for y in range(HEIGHT-1, 0, -2):
-
+            for y in range(HEIGHT - 1, 0, -2):
                 # read 4 bytes for 2 pixels from the serial port
                 buf = serial_connection.read(4)
                 # convert pixel 1 YUV to RGB
-                (r,g,b) = yuv2rgb(buf[0], buf[1], buf[3])
+                (r, g, b) = yuv2rgb(buf[0], buf[1], buf[3])
                 # set the pixel data in the SDL window
-                pixels[x][y] = (r<<16) | (g<<8) | (b<<0)
+                pixels[x][y] = (r << 16) | (g << 8) | (b << 0)
                 # convert pixel 2 YUV to RGB
-                (r,g,b) = yuv2rgb(buf[2], buf[1], buf[3])
+                (r, g, b) = yuv2rgb(buf[2], buf[1], buf[3])
                 # set the pixel data in the SDL window
-                pixels[x][y-1] = (r<<16) | (g<<8) | (b<<0)
+                pixels[x][y - 1] = (r << 16) | (g << 8) | (b << 0)
 
             # update the window (once for every column of new pixels)
             continue_running = continue_running and updateSDLWindow(frame, window_surface, window, event)
@@ -178,6 +186,7 @@ def stage2():  # receive images
 
     return 0
 
+
 def main():
     global serial_connection
 
@@ -191,7 +200,7 @@ def main():
 
     stage1()
     stage2()
-    
+
     # close the serial connection
     serial_connection.close()
 
