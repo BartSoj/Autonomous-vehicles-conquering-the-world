@@ -31,6 +31,7 @@ Do not forget to configure the serial port device below.
 
 import os
 import ctypes
+import sys
 from sys import platform
 import serial
 import numpy as np
